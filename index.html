@@ -8,12 +8,14 @@
     <title>Document</title>
     <script src="https://cdn.jsdelivr.net/npm/geotiff"></script>
     <script src="index.js"></script>
+    <script src="plotty.min.js"></script>
 </head>
 
 <body>
     <input type="file" id="file">
+    <canvas id="plot"></canvas>
     <script>
-        console.log(GeoTIFF);
+        // console.log(GeoTIFF);
         // console.log(ContourMipmap);
 
         const input = document.getElementById('file');
@@ -26,37 +28,57 @@
             const tileHeight = image.getTileHeight();
             const samplesPerPixel = image.getSamplesPerPixel();
 
-            // when we are actually dealing with geo-data the following methods return
-            // meaningful results:
-            // const origin = image.getOrigin();
-            // const resolution = image.getResolution();
+            // when we are actually dealing with geo-data the following methods return meaningful results:
             const bbox = image.getBoundingBox();
             const imageData = await image.readRasters();
+            console.log('imageData', imageData)
 
             const buf = removeNoDataValue(imageData[0]);
             const mipmap = new ContourMipmap(buf, imageData.width, imageData.height);
             const [originX, originY] = image.getOrigin();
             const [scaleX, scaleY] = image.getResolution();
-            const interval=[0.6];
-            const features = mipmap.intervals(interval).map((level) => {
-                const lines = mipmap.contour(level);
+            const interval = 0.2;
+            const levels = [0.6];
+            // const features = mipmap.intervals(interval)
+            const features = levels
+                .map((level) => {
+                    const lines = mipmap.contour(level);
 
-                const coordinates = lines.map(coords =>
-                    coords.map(([x, y]) => [originX + x * scaleX, originY + y * scaleY])
-                );
+                    const coordinates = lines.map(coords =>
+                        coords.map(([x, y]) => [originX + x * scaleX, originY + y * scaleY])
+                    );
 
-                return {
-                    type: 'Feature',
-                    geometry: {
-                        type: 'MultiLineString',
-                        coordinates,
-                    },
-                    properties: {
-                        level: level,
-                    },
-                };
+                    return {
+                        type: 'Feature',
+                        geometry: {
+                            type: 'MultiLineString',
+                            coordinates,
+                        },
+                        properties: {
+                            level: level,
+                        },
+                    };
+                });
+            const geojson = {
+                type: 'FeatureCollection',
+                features,
+            };
+            // console.log(features)
+            // console.log(geojson)
+            console.log(JSON.stringify(geojson))
+            console.log(geojson)
+
+            const canvas = document.getElementById("plot");
+            // plotty.addColorScale("mycolorscale", ["#00ff00", "#0000ff", "#ff0000"], [0, 0.5, 1]);
+            const plot = new plotty.plot({
+                canvas,
+                data: imageData[0],
+                width: image.getWidth(),
+                height: image.getHeight(),
+                domain: [-1, 1],
+                colorScale: "viridis"
             });
-            console.log(features)
+            plot.render();
         }
 
         function removeNoDataValue(raster) {
