@@ -330,4 +330,4 @@ function smooth(line, { kernelWidth = 2, cycles = 2 }) {
   return line;
 }
 
-module.exports = ContourMipmap;
+// module.exports = ContourMipmap;
