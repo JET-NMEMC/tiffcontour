@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdn.jsdelivr.net/npm/geotiff"></script>
+    <script src="index.js"></script>
+</head>
+
+<body>
+    <input type="file" id="file">
+    <script>
+        console.log(GeoTIFF);
+        // console.log(ContourMipmap);
+
+        const input = document.getElementById('file');
+        input.onchange = async function () {
+            const tiff = await GeoTIFF.fromBlob(input.files[0]);
+            const image = await tiff.getImage(); // by default, the first image is read.
+            const width = image.getWidth();
+            const height = image.getHeight();
+            const tileWidth = image.getTileWidth();
+            const tileHeight = image.getTileHeight();
+            const samplesPerPixel = image.getSamplesPerPixel();
+
+            // when we are actually dealing with geo-data the following methods return
+            // meaningful results:
+            // const origin = image.getOrigin();
+            // const resolution = image.getResolution();
+            const bbox = image.getBoundingBox();
+            const imageData = await image.readRasters();
+
+            const buf = removeNoDataValue(imageData[0]);
+            const mipmap = new ContourMipmap(buf, imageData.width, imageData.height);
+            const [originX, originY] = image.getOrigin();
+            const [scaleX, scaleY] = image.getResolution();
+            const interval=[0.6];
+            const features = mipmap.intervals(interval).map((level) => {
+                const lines = mipmap.contour(level);
+
+                const coordinates = lines.map(coords =>
+                    coords.map(([x, y]) => [originX + x * scaleX, originY + y * scaleY])
+                );
+
+                return {
+                    type: 'Feature',
+                    geometry: {
+                        type: 'MultiLineString',
+                        coordinates,
+                    },
+                    properties: {
+                        level: level,
+                    },
+                };
+            });
+            console.log(features)
+        }
+
+        function removeNoDataValue(raster) {
+            const buf = new Float32Array(raster);
+            for (let i = 0; i < buf.length; i++) {
+                if (buf[i] < -1000) { buf[i] = NaN; }
+            }
+            return buf;
+        }
+    </script>
+</body>
+
+</html>
