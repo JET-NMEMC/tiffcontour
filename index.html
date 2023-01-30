@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Geotiff Contour</title>
     <script src="https://cdn.jsdelivr.net/npm/geotiff"></script>
     <script src="index.js"></script>
     <script src="plotty.min.js"></script>
@@ -38,7 +38,7 @@
             const [originX, originY] = image.getOrigin();
             const [scaleX, scaleY] = image.getResolution();
             const interval = 0.2;
-            const levels = [1];
+            const levels = [1.0];
             // const features = mipmap.intervals(interval)
             const features = levels
                 .map((level) => {
